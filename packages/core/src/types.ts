@@ -2,6 +2,7 @@
 // Framework-agnostic: no DOM/React imports here.
 
 export type Severity = "minor" | "annoying" | "blocking";
+export type Intent = "bug" | "feature";
 
 // Rich "where" context captured from a clicked element.
 export type ElementContext = {
@@ -21,7 +22,10 @@ export type ReportBundle = {
   schema: "1.0";
   kind: "user_report";
   ts: string;
-  report: { message: string | null; severity: Severity | null };
+  // `intent` says which door the user came through: a defect, or something
+  // they want that does not exist yet. Triage and the fixer read it — without
+  // it a feature request is diagnosed as 'user error' and never gets built.
+  report: { message: string | null; severity: Severity | null; intent?: Intent };
   context: ElementContext;
   page: { url: string; userAgent: string; viewport: string };
   buffer: null; // reserved: rolling breadcrumb buffer
@@ -58,7 +62,10 @@ export type LoopReport = {
   receivedAt: string;
   status: ReportStatus | string;
   serviceId?: string; // which service/repo this report belongs to
-  report: { message: string | null; severity: Severity | null };
+  // `intent` says which door the user came through: a defect, or something
+  // they want that does not exist yet. Triage and the fixer read it — without
+  // it a feature request is diagnosed as 'user error' and never gets built.
+  report: { message: string | null; severity: Severity | null; intent?: Intent };
   context: ElementContext;
   page?: { url?: string; userAgent?: string; viewport?: string };
   clientTs?: string | null;

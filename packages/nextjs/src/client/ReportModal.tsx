@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { ElementContext, Severity } from "@loopix/core";
+import type { ElementContext, Intent, Severity } from "@loopix/core";
 import { buildReport, whereLabel } from "./capture";
+
+// Two doors, asked first: a defect, or something that does not exist yet.
+// Without this the fixer is told a feature request is "user error" and refuses.
+const INTENTS: { value: Intent; label: string; hint: string }[] = [
+  { value: "bug", label: "Something's broken", hint: "It doesn't do what it should" },
+  { value: "feature", label: "I want something new", hint: "Describe what it should do" },
+];
 
 const SEVERITIES: { value: Severity; label: string }[] = [
   { value: "minor", label: "Minor" },
@@ -12,19 +19,44 @@ const SEVERITIES: { value: Severity; label: string }[] = [
 
 export default function ReportModal({
   context,
+  point,
   onClose,
   reportPath,
 }: {
   context: ElementContext;
+  /** Exact viewport coords of the right-click, so the user can still see the
+   *  spot they are reporting once the overlay dims the page. */
+  point?: { x: number; y: number } | null;
   onClose: () => void;
   reportPath: string;
 }) {
   const [message, setMessage] = useState("");
   const [severity, setSeverity] = useState<Severity | null>(null);
+  const [intent, setIntent] = useState<Intent>("bug");
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  // Which half the dialog sits in. Default: opposite half from the click, so
+  // the marker is never behind it. Re-checked after layout for tall dialogs.
+  const [place, setPlace] = useState<"center" | "top" | "bottom">(() => {
+    if (!point || typeof window === "undefined") return "center";
+    return point.y > window.innerHeight / 2 ? "top" : "bottom";
+  });
+
+  // A tall dialog can still reach into the other half — measure once it exists
+  // and flip if it actually covers the marker.
+  useEffect(() => {
+    if (!point) return;
+    const el = cardRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const covered =
+      point.x >= r.left - 12 && point.x <= r.right + 12 &&
+      point.y >= r.top - 12 && point.y <= r.bottom + 12;
+    if (covered) setPlace(point.y > window.innerHeight / 2 ? "top" : "bottom");
+  }, [point, place]);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -38,7 +70,12 @@ export default function ReportModal({
   async function submit() {
     setSubmitting(true);
     setError(null);
-    const bundle = buildReport(context, { message: message.trim() || null, severity });
+    const bundle = buildReport(context, {
+      message: message.trim() || null,
+      // Severity only means something for a defect.
+      severity: intent === "bug" ? severity : null,
+      intent,
+    });
     try {
       const res = await fetch(reportPath, {
         method: "POST",
@@ -56,12 +93,45 @@ export default function ReportModal({
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4"
+      className={
+        "fixed inset-0 z-[10000] flex justify-center bg-black/40 p-4 " +
+        (place === "top" ? "items-start" : place === "bottom" ? "items-end" : "items-center")
+      }
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
+      {/* The spot being reported. The overlay dims the page, so without this the
+          user loses the thing they just clicked. Outline = the element,
+          dot = the exact point. Both sit ABOVE the dim, ignore the pointer. */}
+      {point && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none fixed rounded ring-2 ring-red-400 ring-offset-2 ring-offset-transparent"
+            style={{
+              left: context.rect.x,
+              top: context.rect.y,
+              width: context.rect.w,
+              height: context.rect.h,
+              boxShadow: "0 0 0 9999px rgba(0,0,0,0.12)", // lifts it out of the dim
+            }}
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none fixed block h-3 w-3 animate-ping rounded-full bg-red-500"
+            style={{ left: point.x - 6, top: point.y - 6 }}
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none fixed block h-3 w-3 rounded-full border-2 border-white bg-red-500 shadow"
+            style={{ left: point.x - 6, top: point.y - 6 }}
+          />
+        </>
+      )}
+
       <div
+        ref={cardRef}
         role="dialog"
         aria-modal="true"
         aria-label="Report a problem"
@@ -130,9 +200,32 @@ export default function ReportModal({
                 </div>
               </div>
 
+              <div className="flex gap-2">
+                {INTENTS.map((o) => {
+                  const active = intent === o.value;
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => setIntent(o.value)}
+                      className={
+                        "flex-1 rounded-lg border px-3 py-2 text-left text-sm transition " +
+                        (active
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10"
+                          : "border-black/10 hover:border-blue-300 dark:border-white/15")
+                      }
+                    >
+                      <span className="block font-medium">{o.label}</span>
+                      <span className="block text-xs text-gray-500 dark:text-gray-400">{o.hint}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
               <div>
                 <label htmlFor="loopix-report-message" className="mb-1 block text-sm font-medium">
-                  What went wrong? <span className="font-normal text-gray-400">(optional)</span>
+                  {intent === "bug" ? "What went wrong?" : "What should it do?"}{" "}
+                  <span className="font-normal text-gray-400">(optional)</span>
                 </label>
                 <textarea
                   id="loopix-report-message"
@@ -140,12 +233,16 @@ export default function ReportModal({
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={3}
-                  placeholder="e.g. clicking this did nothing / it shows the wrong total…"
+                  placeholder={
+                    intent === "bug"
+                      ? "e.g. clicking this did nothing / it shows the wrong total…"
+                      : "e.g. add a Clear all button / let me reorder the list…"
+                  }
                   className="w-full resize-none rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:border-white/10 dark:bg-neutral-800 dark:focus:ring-red-900/40"
                 />
               </div>
 
-              <div>
+              <div hidden={intent !== "bug"}>
                 <div className="mb-1.5 text-sm font-medium">
                   How bad is it? <span className="font-normal text-gray-400">(optional)</span>
                 </div>
