@@ -21,7 +21,10 @@ export default function ReportContextMenu({ reportPath }: { reportPath: string }
 
   useEffect(() => {
     function onContextMenu(e: MouseEvent) {
-      if ((e.target as Element)?.closest?.("[data-loopix-menu]")) return;
+      // Never capture loopix's own UI, nor anything the host marked as chrome
+      // with data-loopix-ignore (dev panels, admin widgets). Reporting those
+      // would ask the agent to edit the instrument rather than the product.
+      if ((e.target as Element)?.closest?.("[data-loopix-menu],[data-loopix-ignore]")) return;
       e.preventDefault();
       // Straight to the modal: it now asks bug-or-feature, which is the only
       // choice the intermediate menu ever offered.
