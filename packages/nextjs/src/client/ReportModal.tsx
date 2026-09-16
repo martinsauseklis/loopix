@@ -22,6 +22,7 @@ export default function ReportModal({
   point,
   onClose,
   reportPath,
+  appVersion,
 }: {
   context: ElementContext;
   /** Exact viewport coords of the right-click, so the user can still see the
@@ -29,6 +30,7 @@ export default function ReportModal({
   point?: { x: number; y: number } | null;
   onClose: () => void;
   reportPath: string;
+  appVersion?: string | null;
 }) {
   const [message, setMessage] = useState("");
   const [severity, setSeverity] = useState<Severity | null>(null);
@@ -75,6 +77,7 @@ export default function ReportModal({
       // Severity only means something for a defect.
       severity: intent === "bug" ? severity : null,
       intent,
+      appVersion,
     });
     try {
       const res = await fetch(reportPath, {

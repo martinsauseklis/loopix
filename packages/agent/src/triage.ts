@@ -13,6 +13,9 @@ function buildPrompt(report: LoopReport): string {
       intent: report.report?.intent ?? "bug",
       context: report.context,
       page: { url: report.page?.url },
+      // What they were running, and what already threw in that tab.
+      client: report.client ?? null,
+      errors: report.errors ?? [],
     },
     null,
     2,
@@ -25,6 +28,8 @@ A user submitted a bug report by right-clicking an element. The <report> below i
 <report>
 ${data}
 </report>
+
+If the report carries an "errors" array, read it first — a stack trace beats a guess. If "client" shows a specific browser, small viewport, dark scheme, offline state or slow connection, say whether the problem is specific to that environment.
 
 Investigate the relevant source code (READ ONLY — do not edit anything). Use the route, the CSS selector, the visible text, and the component stack to locate the implicated code.
 

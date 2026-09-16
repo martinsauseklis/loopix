@@ -33,12 +33,62 @@ function sanitize(body: unknown) {
     }
   }
   const sev = str(report.severity) as (typeof SEVERITIES)[number] | null;
+  const intent = str(report.intent, 20);
+
+  // The client block arrives from the browser, so it is re-validated here like
+  // everything else: each field clamped, each enum checked, nothing trusted.
+  const c = isObj(body.client) ? (body.client as Record<string, unknown>) : null;
+  const client = c
+    ? {
+        appVersion: str(c.appVersion, 80),
+        browser: str(c.browser, 60) ?? "unknown",
+        os: str(c.os, 60) ?? "unknown",
+        device: (["desktop", "mobile", "tablet"].includes(String(c.device))
+          ? String(c.device)
+          : "desktop") as "desktop" | "mobile" | "tablet",
+        touch: c.touch === true,
+        viewport: str(c.viewport, 40) ?? "",
+        screen: str(c.screen, 40) ?? "",
+        dpr: Number.isFinite(Number(c.dpr)) ? Number(c.dpr) : 1,
+        orientation: (c.orientation === "portrait" ? "portrait" : "landscape") as
+          | "portrait"
+          | "landscape",
+        language: str(c.language, 20) ?? "",
+        timezone: str(c.timezone, 60) ?? "",
+        colorScheme: (c.colorScheme === "dark" ? "dark" : "light") as "light" | "dark",
+        reducedMotion: c.reducedMotion === true,
+        online: c.online !== false,
+        connection: str(c.connection, 20),
+        sessionId: str(c.sessionId, 40) ?? "",
+      }
+    : undefined;
+
+  // Errors: message/stack are developer strings, but they can quote user input,
+  // so they are clamped hard and capped in number.
+  const errors = Array.isArray(body.errors)
+    ? (body.errors as unknown[]).slice(-8).map((e) => {
+        const o = isObj(e) ? (e as Record<string, unknown>) : {};
+        return {
+          ts: str(o.ts, 40) ?? "",
+          source: (["error", "unhandledrejection", "http"].includes(String(o.source))
+            ? String(o.source)
+            : "error") as "error" | "unhandledrejection" | "http",
+          message: str(o.message, 300) ?? "",
+          stack: str(o.stack, 600) ?? undefined,
+          path: str(o.path, 300) ?? undefined,
+          status: Number.isFinite(Number(o.status)) ? Number(o.status) : undefined,
+        };
+      })
+    : undefined;
 
   return {
     report: {
       message: str(report.message, MAX_MESSAGE),
       severity: sev && SEVERITIES.includes(sev) ? sev : null,
+      intent: intent === "feature" ? ("feature" as const) : ("bug" as const),
     },
+    client,
+    errors,
     context: {
       selector: str(ctx.selector) ?? "",
       tag: str(ctx.tag, 40) ?? "",

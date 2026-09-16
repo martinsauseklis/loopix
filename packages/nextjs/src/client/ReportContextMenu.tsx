@@ -10,7 +10,13 @@ import ReportModal from "./ReportModal";
 // track of what they were reporting.
 type ClickPoint = { x: number; y: number };
 
-export default function ReportContextMenu({ reportPath }: { reportPath: string }) {
+export default function ReportContextMenu({
+  reportPath,
+  appVersion,
+}: {
+  reportPath: string;
+  appVersion?: string | null;
+}) {
   const [reporting, setReporting] = useState<ElementContext | null>(null);
   const [point, setPoint] = useState<ClickPoint | null>(null);
 
@@ -50,6 +56,7 @@ export default function ReportContextMenu({ reportPath }: { reportPath: string }
           point={point}
           onClose={close}
           reportPath={reportPath}
+          appVersion={appVersion}
         />
       )}
     </>

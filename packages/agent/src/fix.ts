@@ -13,7 +13,13 @@ export const FIX_MODEL = "sonnet"; // stronger model for code edits
 function buildPrompt(report: LoopReport): string {
   const d = report.diagnosis ?? {};
   const data = JSON.stringify(
-    { message: report.report?.message ?? null, context: report.context, page: { url: report.page?.url } },
+    {
+      message: report.report?.message ?? null,
+      context: report.context,
+      page: { url: report.page?.url },
+      client: report.client ?? null,
+      errors: report.errors ?? [],
+    },
     null,
     2,
   );

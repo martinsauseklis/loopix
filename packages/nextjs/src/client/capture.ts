@@ -1,6 +1,7 @@
 // Browser capture helpers: turn a clicked DOM node into rich "where" context
 // so the user never has to describe location. Called only client-side.
 import type { ElementContext, Intent, ReportBundle, Severity } from "@loopix/core";
+import { collectEnv, recentErrors } from "./env";
 
 // Build a stable-ish CSS selector path from the element up to <body>.
 function cssPath(el: Element): string {
@@ -88,19 +89,27 @@ export function whereLabel(ctx: ElementContext): string {
 
 export function buildReport(
   context: ElementContext,
-  fields: { message: string | null; severity: Severity | null; intent?: Intent },
+  fields: {
+    message: string | null;
+    severity: Severity | null;
+    intent?: Intent;
+    /** Release the host is running; surfaced on the ticket. */
+    appVersion?: string | null;
+  },
 ): ReportBundle {
   return {
     schema: "1.0",
     kind: "user_report",
     ts: new Date().toISOString(),
-    report: fields,
+    report: { message: fields.message, severity: fields.severity, intent: fields.intent },
     context,
     page: {
       url: typeof location !== "undefined" ? location.href : "",
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
       viewport: typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "",
     },
+    client: collectEnv(fields.appVersion),
+    errors: recentErrors(),
     buffer: null,
   };
 }

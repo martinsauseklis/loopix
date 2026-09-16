@@ -2,6 +2,39 @@
 // Framework-agnostic: no DOM/React imports here.
 
 export type Severity = "minor" | "annoying" | "blocking";
+
+export type ClientEnv = {
+  /** Release the user was actually running — the first question on any ticket. */
+  appVersion: string | null;
+  browser: string;        // "Chrome 141"
+  os: string;             // "Windows 11"
+  device: "desktop" | "mobile" | "tablet";
+  touch: boolean;
+  viewport: string;       // "1280x800" — what they saw
+  screen: string;         // "2560x1440" — what they have
+  dpr: number;            // retina/scaling bugs
+  orientation: "portrait" | "landscape";
+  language: string;       // "lv-LV"
+  timezone: string;       // correlates with server logs
+  colorScheme: "light" | "dark";
+  reducedMotion: boolean;
+  online: boolean;
+  connection: string | null; // "4g" | "slow-2g" — "it's stuck loading"
+  /** Random per-tab id. Not a user id, not stored — lets several reports from
+   *  one session be recognised as one story. */
+  sessionId: string;
+};
+
+export type ClientError = {
+  ts: string;
+  message: string;
+  source: "error" | "unhandledrejection" | "http";
+  /** First frames only — enough to locate, short enough to read. */
+  stack?: string;
+  /** For source:"http" — the failing path and status. Never the body. */
+  path?: string;
+  status?: number;
+};
 export type Intent = "bug" | "feature";
 
 // Rich "where" context captured from a clicked element.
@@ -28,6 +61,13 @@ export type ReportBundle = {
   report: { message: string | null; severity: Severity | null; intent?: Intent };
   context: ElementContext;
   page: { url: string; userAgent: string; viewport: string };
+  /** What the user was running. Every field is a number, boolean or short
+   *  closed-vocabulary string — never user content. This is what turns
+   *  "doesn't work" into "Safari 17 on iOS, 390px wide, offline". */
+  client?: ClientEnv;
+  /** Script errors seen in this tab before the report, newest last. Message and
+   *  stack only — the highest-signal field for triage after the message itself. */
+  errors?: ClientError[];
   buffer: null; // reserved: rolling breadcrumb buffer
 };
 
@@ -66,6 +106,8 @@ export type LoopReport = {
   // they want that does not exist yet. Triage and the fixer read it — without
   // it a feature request is diagnosed as 'user error' and never gets built.
   report: { message: string | null; severity: Severity | null; intent?: Intent };
+  client?: ClientEnv;
+  errors?: ClientError[];
   context: ElementContext;
   page?: { url?: string; userAgent?: string; viewport?: string };
   clientTs?: string | null;
