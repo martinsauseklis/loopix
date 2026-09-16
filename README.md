@@ -1,15 +1,52 @@
-# loopix
+<h1>loopix</h1>
 
-An in-app, git-backed feedback loop you drop into a Node project. Users **right-click anything → report a bug** (location captured automatically); an AI agent **triages** it (read-only) and **fixes** it on a git branch; a human **approves** at an in-app merge gate. loopix is essentially a *UI for git, visible in your app* — report → branch → diff → review → merge.
+**An in-app, git-backed feedback loop you drop into a Next.js project.** Users
+right-click the thing that is wrong and report it — the exact element, the
+browser and build, recent stack traces and the steps they took all travel with
+it. An agent triages read-only and fixes on its own branch. A human approves.
 
-> **Status: Phase 0** (single-repo). Multi-repo routing and GitLab MR integration are designed but not yet built — see [Roadmap](#roadmap). Not yet published to npm; consumed locally via a dev-link script.
+> **Proprietary** — © Mārtiņš Auseklis, all rights reserved. See [LICENSE](LICENSE).
+> Running it inside a company grants that company no rights to it.
 
-## Install it in your app
+---
 
-**[INSTALL.md](INSTALL.md)** — the five files, in order, ~15 minutes.
-**[templates/CLAUDE.loopix.md](templates/CLAUDE.loopix.md)** — paste into the host
-repo's CLAUDE.md so an agent working there knows how to operate the loop
-(and what not to touch).
+## Quick start (for an AI agent working in a host repo)
+
+Run these in order, from the root of the Next.js app that should get loopix.
+
+```bash
+# 1. build loopix once (wherever you cloned it)
+cd ~/src/loopix && pnpm install && pnpm -r build
+
+# 2. copy the built packages INTO the host app (real dirs, not symlinks:
+#    a symlink widens Next's turbopack root and breaks @swc/helpers)
+cd /path/to/host-app
+cp ~/src/loopix/scripts/link-loopix.sh .
+bash link-loopix.sh ~/src/loopix
+
+# 3. read these two files and follow them exactly
+#    ~/src/loopix/INSTALL.md                  — the five files to add, in order
+#    ~/src/loopix/templates/CLAUDE.loopix.md  — paste into the host repo CLAUDE.md
+
+# 4. secrets (never NEXT_PUBLIC_*, never in client code)
+printf 'LOOPIX_ADMIN_TOKEN=%s\n' "$(openssl rand -base64 24)" >> .env.local
+printf 'NEXT_PUBLIC_BUILD_SHA=%s\n' "$(git rev-parse --short HEAD)" >> .env.local
+echo '.loop/' >> .gitignore
+
+# 5. prove the gate works BEFORE anything else — this must print 401
+curl -s -o /dev/null -w '%{http_code}\n' localhost:3000/api/loop/admin/reports
+
+# 6. run the agent (uses the Claude Code login; no API key needed)
+node node_modules/@loopix/agent/dist/cli.js triage        # watcher, 4s poll
+node node_modules/@loopix/agent/dist/cli.js fix --id <id> # fix one report
+```
+
+**Re-run step 2 after every loopix rebuild, then restart the dev server AND the
+watchers.** Both cache the old code and will show you behaviour that is no
+longer in the source — the single most confusing failure in this project.
+
+A complete, working host app is `../loopix-demo`. When docs and that app
+disagree, the app is right.
 
 ## Packages
 
