@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import ReportContextMenu from "./ReportContextMenu";
 import { installErrorCapture } from "./env";
 import { installTrail } from "./trail";
+import { ensureStyles } from "./style-host";
 
 // The single integration seam. Mount once (e.g. in the root layout). Renders
 // the capture context menu when enabled; renders nothing when disabled, so the
@@ -26,6 +27,7 @@ export function LoopixProvider({
   // opens — by then the error that caused the complaint is long gone.
   useEffect(() => {
     if (!enabled) return;
+    ensureStyles();
     installErrorCapture();
     installTrail();
   }, [enabled]);
