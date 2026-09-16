@@ -1,0 +1,16 @@
+{
+  "name": "@loopix/store-postgres",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": { "build": "tsup" },
+  "dependencies": { "@loopix/core": "file:../core" }
+}

@@ -25,6 +25,10 @@ export type ServiceConfig = {
 
 // Server-side config (carries the store + secrets — never goes to the client).
 export type LoopixServerConfig = {
+  /** Who is reporting, from the HOST's session (Keycloak, NextAuth, whatever).
+   *  loopix deliberately has no auth of its own: it must work in any app, and
+   *  a widget should never hold your identity provider's secrets. */
+  identify?: (request: Request) => Promise<{ sub: string } | null> | { sub: string } | null;
   flags?: LoopixFlags;
   store: ReportStore;
   services?: ServiceConfig[];

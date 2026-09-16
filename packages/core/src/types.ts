@@ -136,6 +136,12 @@ export type LoopReport = {
   receivedAt: string;
   status: ReportStatus | string;
   serviceId?: string; // which service/repo this report belongs to
+  /** Opaque subject id from the HOST's auth (e.g. Keycloak "sub"), resolved
+   *  server-side. Never sent by the browser — a client-supplied identity is
+   *  just a claim. Absent when the app has no logged-in user. */
+  reporterSub?: string;
+  /** Set by a shared store so a row is self-describing outside its table. */
+  projectId?: string;
   // `intent` says which door the user came through: a defect, or something
   // they want that does not exist yet. Triage and the fixer read it — without
   // it a feature request is diagnosed as 'user error' and never gets built.

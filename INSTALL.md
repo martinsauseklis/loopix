@@ -128,3 +128,47 @@ to force one through.
 
 If step 6 returns anything else, the proxy matcher is wrong — fix that before
 anything else.
+
+---
+
+## Using Postgres instead of the file store
+
+`FileReportStore` is fine for one app on one machine. It breaks the moment you
+run two instances or containers: concurrent writes to one JSONL file, and no
+shared view. If you have a database, use it.
+
+```ts
+// loopix.config.ts
+import { Pool } from "pg";                       // YOUR driver, your pooling
+import { PostgresReportStore } from "@loopix/store-postgres";
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+export const loopixConfig: LoopixServerConfig = {
+  flags: { enabled: true, capture: true, dashboard: true, agent: false, requireReview: true },
+  store: new PostgresReportStore({ sql: pool, projectId: "parcel-admin" }),
+  // Who is reporting — from YOUR session. loopix has no auth of its own.
+  identify: async (req) => {
+    const session = await getKeycloakSession(req);   // your existing helper
+    return session ? { sub: session.sub } : null;
+  },
+};
+```
+
+Run `migrate(pool)` once (or paste `SCHEMA_SQL` into your migration tool).
+
+**Two tables.** `loopix_reports` holds each report as one JSONB document, with
+`project_id`, `status` and `reporter` as GENERATED columns so they are indexable
+without being able to drift from the document. `loopix_events` is append-only —
+that is the changelog, and the answer to "who approved this?".
+
+**One database, many projects.** `projectId` is required and every query is
+scoped by it. Two Next.js apps share a database and never see each other's
+reports.
+
+**"Show me what I reported"** is `store.byReporter(sub)`, with `sub` taken from
+your session on the server. loopix never decides who is asking.
+
+**No driver dependency.** The store takes anything with
+`query(sql, params) => { rows }`. Your `pg.Pool` satisfies it as-is, and nothing
+is added to your lockfile.

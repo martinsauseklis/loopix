@@ -152,11 +152,22 @@ export function createReportRoute(config: LoopixServerConfig) {
     const clean = sanitize(body);
     if (!clean) return Response.json({ ok: false, error: "invalid report" }, { status: 400 });
 
+    // Identity comes from the host's own session, never from the payload:
+    // anything the browser sends about who it is, is a claim, not a fact.
+    let reporterSub: string | undefined;
+    try {
+      reporterSub = (await config.identify?.(request))?.sub;
+    } catch {
+      // An identity lookup that fails must not lose the report — an anonymous
+      // report is worth more than no report.
+    }
+
     const record: LoopReport = {
       id: randomUUID(),
       receivedAt: new Date().toISOString(),
       status: "new",
       serviceId: config.services?.[0]?.id,
+      reporterSub,
       ...clean,
     };
 

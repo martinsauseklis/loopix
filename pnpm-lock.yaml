@@ -48,6 +48,12 @@ importers:
         specifier: ^19.0.0
         version: 19.2.7(react@19.2.7)
 
+  packages/store-postgres:
+    dependencies:
+      '@loopix/core':
+        specifier: file:../core
+        version: link:../core
+
 packages:
 
   '@emnapi/runtime@1.11.1':
