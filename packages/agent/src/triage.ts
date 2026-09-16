@@ -39,11 +39,15 @@ ${feature
   ? `The user asked for something NEW — treat it as a FEATURE REQUEST, not a defect. Do not call it user error. Decide where it would be built and whether it is buildable here in a small, self-contained change. Set "category":"feature", "reproducible":false, "autoFixable":true when it is a contained UI/logic change in this codebase (false only if it needs a new dependency, a backend, or a secret), and put the implementation plan in "suggestedFix".`
   : `Then judge whether this is a real, reproducible bug.`}
 
+The user may have written in any language. Everything you output must be in ENGLISH, whatever they wrote in.
+
 Respond with ONLY a single JSON code block, no prose before or after:
 
 \`\`\`json
 {
-  "summary": "one-sentence restatement of the actual problem",
+  "language": "BCP-47 tag of the language the user wrote in, e.g. en, de, fr, it, lv",
+  "messageEn": "the user's message translated to English, faithfully, no interpretation; copy it unchanged if it is already English",
+  "summary": "one-sentence restatement of the actual problem, ALWAYS in English",
   "category": "bug | feature | confusion | noise",
   "reproducible": true,
   "suspectedCause": "where/why it likely happens (file + reason), or 'unknown'",
@@ -120,7 +124,28 @@ export async function triageNext(store: ReportStore, opts: TriageOptions = {}): 
 
   try {
     const { diagnosis, meta } = await runWithRetry(() => diagnose(report, repo, model), { log });
-    await store.patch(report.id, { status: "triaged", diagnosis, triage: meta });
+
+    // The same call that diagnosed also detected the language and translated
+    // the message, so English costs nothing extra. The original text stays
+    // exactly as the user wrote it — this only adds a field beside it.
+    const d = diagnosis as Diagnosis & { language?: string; messageEn?: string };
+    const translated =
+      d.messageEn || d.language
+        ? {
+            report: {
+              ...report.report,
+              lang: d.language?.slice(0, 12),
+              messageEn: d.messageEn?.slice(0, 2000) ?? report.report?.message ?? undefined,
+            },
+          }
+        : {};
+
+    await store.patch(report.id, {
+      status: "triaged",
+      diagnosis,
+      triage: meta,
+      ...translated,
+    });
     log(
       `[loop] triaged ${id8}: ${diagnosis.category ?? "?"} / ` +
         `reproducible=${diagnosis.reproducible ?? "?"} / $${meta.cost_usd?.toFixed(4)} ` +

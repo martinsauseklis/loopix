@@ -118,7 +118,18 @@ export type LoopReport = {
   // `intent` says which door the user came through: a defect, or something
   // they want that does not exist yet. Triage and the fixer read it — without
   // it a feature request is diagnosed as 'user error' and never gets built.
-  report: { message: string | null; severity: Severity | null; intent?: Intent };
+  report: {
+    message: string | null;
+    severity: Severity | null;
+    intent?: Intent;
+    /** BCP-47 tag of the message as written, detected at triage ("de", "lv"). */
+    lang?: string;
+    /** The message in English. Written by triage; everything downstream (the
+     *  fixer, a Jira ticket, a dashboard) reads THIS. The original above is
+     *  never overwritten — translation is lossy, it is the only evidence of
+     *  what the user actually said, and support may need to answer in it. */
+    messageEn?: string;
+  };
   client?: ClientEnv;
   errors?: ClientError[];
   buffer?: Breadcrumb[] | null;

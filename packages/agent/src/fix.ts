@@ -14,7 +14,8 @@ function buildPrompt(report: LoopReport): string {
   const d = report.diagnosis ?? {};
   const data = JSON.stringify(
     {
-      message: report.report?.message ?? null,
+      // English rendering when triage produced one; the original otherwise.
+      message: report.report?.messageEn ?? report.report?.message ?? null,
       context: report.context,
       page: { url: report.page?.url },
       client: report.client ?? null,
