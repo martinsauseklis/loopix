@@ -63,6 +63,24 @@ function sanitize(body: unknown) {
       }
     : undefined;
 
+  // The trail is user-path data from the browser: clamp every field, check the
+  // type against the closed set, cap the length.
+  const TYPES = ["nav", "click", "input", "submit", "http", "console"];
+  const buffer = Array.isArray(body.buffer)
+    ? (body.buffer as unknown[]).slice(-40).map((b) => {
+        const o = isObj(b) ? (b as Record<string, unknown>) : {};
+        return {
+          ts: str(o.ts, 40) ?? "",
+          type: (TYPES.includes(String(o.type)) ? String(o.type) : "click") as
+            | "nav" | "click" | "input" | "submit" | "http" | "console",
+          detail: str(o.detail, 200) ?? "",
+          label: str(o.label, 200) ?? undefined,
+          status: Number.isFinite(Number(o.status)) ? Number(o.status) : undefined,
+          ms: Number.isFinite(Number(o.ms)) ? Number(o.ms) : undefined,
+        };
+      })
+    : undefined;
+
   // Errors: message/stack are developer strings, but they can quote user input,
   // so they are clamped hard and capped in number.
   const errors = Array.isArray(body.errors)
@@ -89,6 +107,7 @@ function sanitize(body: unknown) {
     },
     client,
     errors,
+    buffer,
     context: {
       selector: str(ctx.selector) ?? "",
       tag: str(ctx.tag, 40) ?? "",

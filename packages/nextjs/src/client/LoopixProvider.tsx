@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import ReportContextMenu from "./ReportContextMenu";
 import { installErrorCapture } from "./env";
+import { installTrail } from "./trail";
 
 // The single integration seam. Mount once (e.g. in the root layout). Renders
 // the capture context menu when enabled; renders nothing when disabled, so the
@@ -24,7 +25,9 @@ export function LoopixProvider({
   // Listeners must be installed before anything breaks, not when the modal
   // opens — by then the error that caused the complaint is long gone.
   useEffect(() => {
-    if (enabled) installErrorCapture();
+    if (!enabled) return;
+    installErrorCapture();
+    installTrail();
   }, [enabled]);
 
   if (process.env.NEXT_PUBLIC_LOOPIX === "off") return null;

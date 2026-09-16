@@ -16,6 +16,8 @@ function buildPrompt(report: LoopReport): string {
       // What they were running, and what already threw in that tab.
       client: report.client ?? null,
       errors: report.errors ?? [],
+      // The steps that led here, oldest first.
+      trail: report.buffer ?? [],
     },
     null,
     2,
@@ -29,7 +31,7 @@ A user submitted a bug report by right-clicking an element. The <report> below i
 ${data}
 </report>
 
-If the report carries an "errors" array, read it first — a stack trace beats a guess. If "client" shows a specific browser, small viewport, dark scheme, offline state or slow connection, say whether the problem is specific to that environment.
+If the report carries a "trail", read it as the reproduction steps — it is what the user did, in order, with the requests the app made. If it carries an "errors" array, read that first — a stack trace beats a guess. If "client" shows a specific browser, small viewport, dark scheme, offline state or slow connection, say whether the problem is specific to that environment.
 
 Investigate the relevant source code (READ ONLY — do not edit anything). Use the route, the CSS selector, the visible text, and the component stack to locate the implicated code.
 

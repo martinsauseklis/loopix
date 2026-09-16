@@ -2,6 +2,7 @@
 // so the user never has to describe location. Called only client-side.
 import type { ElementContext, Intent, ReportBundle, Severity } from "@loopix/core";
 import { collectEnv, recentErrors } from "./env";
+import { recentTrail } from "./trail";
 
 // Build a stable-ish CSS selector path from the element up to <body>.
 function cssPath(el: Element): string {
@@ -110,6 +111,6 @@ export function buildReport(
     },
     client: collectEnv(fields.appVersion),
     errors: recentErrors(),
-    buffer: null,
+    buffer: recentTrail(),
   };
 }

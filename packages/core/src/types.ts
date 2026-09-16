@@ -25,6 +25,17 @@ export type ClientEnv = {
   sessionId: string;
 };
 
+/** One step in the journey. `type` is a closed set; `detail` and `label` are
+ *  short, scrubbed strings — never a typed value, never a query string. */
+export type Breadcrumb = {
+  ts: string;
+  type: "nav" | "click" | "input" | "submit" | "http" | "console";
+  detail: string;
+  label?: string;
+  status?: number;
+  ms?: number;
+};
+
 export type ClientError = {
   ts: string;
   message: string;
@@ -68,7 +79,9 @@ export type ReportBundle = {
   /** Script errors seen in this tab before the report, newest last. Message and
    *  stack only — the highest-signal field for triage after the message itself. */
   errors?: ClientError[];
-  buffer: null; // reserved: rolling breadcrumb buffer
+  /** The journey: the last ~40 things that happened, in order. Replaces the
+   *  "what steps did you take?" question entirely. */
+  buffer?: Breadcrumb[] | null;
 };
 
 export type ReportStatus =
@@ -108,6 +121,7 @@ export type LoopReport = {
   report: { message: string | null; severity: Severity | null; intent?: Intent };
   client?: ClientEnv;
   errors?: ClientError[];
+  buffer?: Breadcrumb[] | null;
   context: ElementContext;
   page?: { url?: string; userAgent?: string; viewport?: string };
   clientTs?: string | null;
