@@ -176,5 +176,23 @@ pnpm typecheck
 
 ## Roadmap
 
+- **Journey breadcrumbs (his idea, 2026-09-16).** Record the steps a user took to get here and send them
+  with the report. Today a report carries *where* they clicked; this adds *how they arrived*, which is the
+  difference between "the button did nothing" and a reproducible path. It helps all three jobs: reporting
+  (nothing to describe), triage (a real repro instead of a guess — the two `fix_failed` reports on 2026-09-16
+  both died on a mismatch between report and code), and features (you can see the workaround people invented).
+  The schema already reserves the slot: `ReportBundle.buffer` (`core/src/types.ts:31`, "rolling breadcrumb buffer").
+
+  **Design constraints, decided up front — this is the feature that can leak an entire session:**
+  - A **rolling in-memory ring buffer** (last ~30 events), sent ONLY when a report is filed. Never streamed,
+    never persisted for users who report nothing.
+  - **Structured events, not a recording**: `{t, type, route, selector, textLabel}` where type is a closed
+    enum (`nav`, `click`, `input`, `submit`, `error`). No screenshots, no DOM snapshots, no session replay.
+  - **Never the values people type.** An `input` event records *that* a field changed and which one —
+    `hasValue: true`, `length: 12` — never the string. Same rule for URLs with tokens or ids in them.
+  - **Opt-out honoured**: anything under `[data-loopix-ignore]` produces no breadcrumbs either.
+  - The buffer is **untrusted data** downstream, exactly like the message: delimited in the triage prompt,
+    never instructions.
+
 - **Phase 1 — multi-repo.** Populate `services[]`; triage routes a report to the owning service; the agent clones/worktrees *that* repo and runs its build/test. (A frontend complaint can be fixed in a backend repo.)
 - **Phase 2 — forge + prod.** A Node reporter SDK for backends; the merge gate becomes an approved **GitLab MR → CI build → deploy**; a Postgres `ReportStore`; the agent runs out-of-band in CI; deploy-SHA + correlation IDs on reports.
