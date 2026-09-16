@@ -237,4 +237,96 @@ export const LOOPIX_CSS = `
 .lpx-sent-t { font-weight: 500; }
 .lpx-sent-s { font-size: .875rem; color: var(--lpx-muted); }
 .lpx-error { font-size: .875rem; color: var(--lpx-danger); }
+
+/* ── floating panel (the live monitor) ───────────────────── */
+/* Same chrome as the dialog: any loopix surface must be recognisable as
+   loopix at a glance, wherever it is rendered. */
+.lpx-panel {
+  position: fixed;
+  z-index: 2147482999;          /* just under the dialog */
+  width: 340px;
+  overflow: hidden;
+  border-radius: var(--lpx-radius);
+  border: 1px solid var(--lpx-line);
+  background: var(--lpx-bg);
+  color: var(--lpx-fg);
+  box-shadow: var(--lpx-shadow);
+}
+.lpx-panel-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px;
+  background: var(--lpx-bg-raise);
+  border-bottom: 1px solid var(--lpx-line-soft);
+  cursor: move;
+  touch-action: none;
+}
+.lpx-live {
+  width: 8px; height: 8px; border-radius: 999px;
+  background: #3f3f4b;
+}
+.lpx-live[data-on="true"] {
+  background: var(--lpx-ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lpx-ok) 22%, transparent);
+  animation: lpx-pulse 1.4s ease-in-out infinite;
+}
+@keyframes lpx-pulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .lpx-live[data-on="true"] { animation: none; } }
+
+.lpx-badge {
+  font-family: var(--lpx-mono);
+  font-size: .625rem; letter-spacing: .1em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 4px;
+  background: rgba(251,191,36,.16); color: #fbbf24;
+}
+.lpx-panel-body { max-height: 20rem; overflow: auto; padding: 8px; }
+.lpx-empty { padding: 24px 8px; text-align: center; font-size: .75rem; color: var(--lpx-muted); }
+
+.lpx-item {
+  border: 1px solid var(--lpx-line-soft);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 6px;
+  background: var(--lpx-surface);
+}
+.lpx-item-msg {
+  font-size: .75rem; font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lpx-steps { display: flex; gap: 3px; margin-top: 8px; }
+.lpx-step { height: 3px; flex: 1; border-radius: 999px; background: rgba(255,255,255,.10); }
+.lpx-step[data-state="done"] { background: var(--lpx-ok); }
+.lpx-step[data-state="now"] { background: var(--lpx-accent); animation: lpx-pulse 1.2s ease-in-out infinite; }
+.lpx-step[data-state="off"] { background: var(--lpx-danger); }
+.lpx-item-state {
+  margin-top: 6px;
+  font-family: var(--lpx-mono);
+  font-size: .6875rem; color: var(--lpx-muted);
+}
+.lpx-item-review { margin-top: 6px; font-size: .6875rem; font-weight: 500; color: var(--lpx-accent); }
+.lpx-item-note { margin-top: 4px; font-size: .6875rem; line-height: 1.4; color: var(--lpx-muted); }
+.lpx-item-btn {
+  cursor: pointer; width: 100%; margin-top: 8px;
+  border: 1px solid var(--lpx-line);
+  border-radius: 8px; padding: 6px 12px;
+  font-size: .6875rem; font-weight: 500; text-align: center;
+  color: var(--lpx-fg);
+}
+.lpx-item-btn:hover { background: rgba(255,255,255,.06); }
+.lpx-item-btn-go { background: var(--lpx-ok); color: #06240f; border-color: transparent; }
+.lpx-item-btn:disabled { opacity: .55; cursor: default; }
+
+.lpx-fab {
+  position: fixed;
+  z-index: 2147482999;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  border-radius: 999px;
+  border: 1px solid var(--lpx-line);
+  background: var(--lpx-bg);
+  color: var(--lpx-fg);
+  padding: 9px 16px;
+  font-family: var(--lpx-mono);
+  font-size: .75rem;
+  box-shadow: var(--lpx-shadow);
+}
 `;
