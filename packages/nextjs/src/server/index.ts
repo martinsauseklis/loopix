@@ -6,6 +6,7 @@ export {
   createMergeRoute,
   createRejectRoute,
   createRetryRoute,
+  createRevertRoute,
 } from "./admin-routes";
 export { loopixProxy } from "./proxy";
 

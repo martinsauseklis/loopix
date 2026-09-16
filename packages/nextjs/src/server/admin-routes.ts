@@ -108,3 +108,65 @@ export function createRetryRoute(config: LoopixServerConfig) {
     return Response.json({ ok: true, status: next });
   };
 }
+
+/**
+ * Undo a merged fix.
+ *
+ * `git revert -m 1 <merge>` — NOT `reset --hard`. Reset rewrites history: it
+ * would throw away every fix merged after this one, and on a shared branch it
+ * breaks everyone who already pulled. Revert adds a new commit that undoes
+ * exactly this merge, so later fixes survive and the record of what happened
+ * stays readable. Because every fix lands as its own --no-ff merge commit, the
+ * undo is surgical.
+ *
+ * The report ends as "reverted", which is terminal: the watcher must not pick
+ * it up and rebuild the thing a human just rejected.
+ */
+export function createRevertRoute(config: LoopixServerConfig) {
+  return async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
+    const { id } = await ctx.params;
+    const r = await config.store.get(id);
+    if (!r) return Response.json({ ok: false, error: "unknown report" }, { status: 404 });
+    if (r.status !== "merged") {
+      return Response.json(
+        { ok: false, error: `only a merged fix can be reverted (status: ${r.status})` },
+        { status: 409 },
+      );
+    }
+    const commit = r.merge?.commit;
+    if (!commit || !/^[0-9a-f]{7,40}$/.test(commit)) {
+      return Response.json({ ok: false, error: "report has no merge commit" }, { status: 400 });
+    }
+
+    const repo = process.cwd();
+    try {
+      const dirty = (await git(["status", "--porcelain"], repo)).stdout.trim();
+      if (dirty) {
+        return Response.json(
+          { ok: false, error: "working tree not clean — commit or stash first" },
+          { status: 409 },
+        );
+      }
+      try {
+        // -m 1: undo relative to the first parent, i.e. the branch we merged into.
+        await git(["revert", "--no-edit", "-m", "1", commit], repo);
+      } catch {
+        // A later change touching the same lines: leave the tree as it was and
+        // hand it to a human rather than guessing.
+        await git(["revert", "--abort"], repo).catch(() => {});
+        return Response.json(
+          { ok: false, error: "revert conflicts with later changes — needs a human" },
+          { status: 409 },
+        );
+      }
+      const revertCommit = (await git(["rev-parse", "HEAD"], repo)).stdout.trim();
+      await config.store.patch(id, {
+        status: "reverted",
+        revert: { at: new Date().toISOString(), commit: revertCommit, undid: commit },
+      });
+      return Response.json({ ok: true, commit: revertCommit });
+    } catch (err) {
+      return Response.json({ ok: false, error: String(err).slice(0, 300) }, { status: 500 });
+    }
+  };
+}

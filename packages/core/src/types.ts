@@ -91,6 +91,7 @@ export type ReportStatus =
   | "fixing"
   | "fix_ready"
   | "merged"
+  | "reverted"
   | "rejected"
   | "triage_failed"
   | "fix_failed";
@@ -136,6 +137,8 @@ export type LoopReport = {
   context: ElementContext;
   page?: { url?: string; userAgent?: string; viewport?: string };
   clientTs?: string | null;
+  /** Set when a merged fix was undone: the revert commit, and what it undid. */
+  revert?: { at: string; commit: string; undid: string };
   diagnosis?: Diagnosis;
   triage?: {
     model?: string;

@@ -96,6 +96,7 @@ export default function ReportModal({
 
   return (
     <div
+      data-loopix-ignore
       className={
         "fixed inset-0 z-[10000] flex justify-center bg-black/40 p-4 " +
         (place === "top" ? "items-start" : place === "bottom" ? "items-end" : "items-center")
