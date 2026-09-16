@@ -4,6 +4,13 @@ An in-app, git-backed feedback loop you drop into a Node project. Users **right-
 
 > **Status: Phase 0** (single-repo). Multi-repo routing and GitLab MR integration are designed but not yet built — see [Roadmap](#roadmap). Not yet published to npm; consumed locally via a dev-link script.
 
+## Install it in your app
+
+**[INSTALL.md](INSTALL.md)** — the five files, in order, ~15 minutes.
+**[templates/CLAUDE.loopix.md](templates/CLAUDE.loopix.md)** — paste into the host
+repo's CLAUDE.md so an agent working there knows how to operate the loop
+(and what not to touch).
+
 ## Packages
 
 | Package | What it is |
