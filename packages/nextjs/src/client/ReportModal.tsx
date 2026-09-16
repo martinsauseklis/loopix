@@ -130,6 +130,11 @@ export default function ReportModal({
         aria-label="Report a problem"
         className="lpx-card"
       >
+        <div className="lpx-brand">
+          <span className="lpx-brand-dot" aria-hidden />
+          <span className="lpx-brand-name">loopix</span>
+          <span className="lpx-brand-tag">feedback tool</span>
+        </div>
         {sent ? (
           <div className="lpx-sent">
             <div className="lpx-check">

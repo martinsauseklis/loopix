@@ -20,34 +20,28 @@ export const LOOPIX_CSS = `
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
 
-  --lpx-bg: #ffffff;
-  --lpx-fg: #111827;
-  --lpx-muted: #6b7280;
-  --lpx-line: rgba(0,0,0,.10);
-  --lpx-line-soft: rgba(0,0,0,.06);
-  --lpx-surface: #f9fafb;
-  --lpx-accent: #2563eb;
-  --lpx-accent-fg: #ffffff;
-  --lpx-danger: #dc2626;
-  --lpx-ok: #16a34a;
-  --lpx-ok-bg: #dcfce7;
-  --lpx-mark: #ef4444;
-  --lpx-shadow: 0 20px 40px -12px rgba(0,0,0,.35);
-  --lpx-radius: 12px;
-}
-@media (prefers-color-scheme: dark) {
-  .lpx-root {
-    --lpx-bg: #171717;
-    --lpx-fg: #f3f4f6;
-    --lpx-muted: #9ca3af;
-    --lpx-line: rgba(255,255,255,.12);
-    --lpx-line-soft: rgba(255,255,255,.07);
-    --lpx-surface: rgba(255,255,255,.05);
-    --lpx-accent: #60a5fa;
-    --lpx-accent-fg: #0b1120;
-    --lpx-ok: #4ade80;
-    --lpx-ok-bg: rgba(22,163,74,.20);
-  }
+  /* DELIBERATELY NOT THEMED BY THE HOST.
+     loopix is a tool layered on top of someone else's product, and a user must
+     never think it is part of the app they are using. So it wears dark
+     developer-tool chrome in every host, light or dark — the same reason the
+     browser's own devtools do not adopt the page's colours. The only thing a
+     host can change is --lpx-accent, if it really wants to. */
+  --lpx-bg: #15151b;
+  --lpx-bg-raise: #1d1d26;
+  --lpx-fg: #ecedf2;
+  --lpx-muted: #9b9bab;
+  --lpx-line: rgba(255,255,255,.10);
+  --lpx-line-soft: rgba(255,255,255,.06);
+  --lpx-surface: rgba(255,255,255,.04);
+  --lpx-accent: #a78bfa;            /* violet: rare in product UI, reads as "tooling" */
+  --lpx-accent-fg: #14101f;
+  --lpx-danger: #f87171;
+  --lpx-ok: #4ade80;
+  --lpx-ok-bg: rgba(74,222,128,.14);
+  --lpx-mark: #fb7185;
+  --lpx-shadow: 0 24px 60px -12px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.08);
+  --lpx-radius: 14px;
+  --lpx-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 /* every descendant resets the few properties a host is most likely to set */
@@ -106,13 +100,39 @@ export const LOOPIX_CSS = `
   background: var(--lpx-bg);
   color: var(--lpx-fg);
   box-shadow: var(--lpx-shadow);
+  /* a thin lit edge: reads as a pane floating ABOVE the page, not a card in it */
+  border: 1px solid var(--lpx-line);
+}
+
+/* ── the wordmark: this is a tool, and it says so ────────── */
+.lpx-brand {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 20px;
+  background: var(--lpx-bg-raise);
+  border-bottom: 1px solid var(--lpx-line-soft);
+}
+.lpx-brand-dot {
+  width: 8px; height: 8px; border-radius: 999px;
+  background: var(--lpx-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lpx-accent) 25%, transparent);
+}
+.lpx-brand-name {
+  font-family: var(--lpx-mono);
+  font-size: .8125rem; font-weight: 600; letter-spacing: .02em;
+  color: var(--lpx-fg);
+}
+.lpx-brand-tag {
+  margin-left: auto;
+  font-family: var(--lpx-mono);
+  font-size: .625rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--lpx-muted);
 }
 .lpx-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--lpx-line-soft);
 }
-.lpx-title { font-size: 1rem; font-weight: 600; }
+.lpx-title { font-size: .9375rem; font-weight: 600; }
 .lpx-sub { margin-top: 2px; font-size: .75rem; color: var(--lpx-muted); }
 .lpx-body { display: grid; gap: 16px; padding: 16px 20px; }
 .lpx-foot {
@@ -129,6 +149,7 @@ export const LOOPIX_CSS = `
   font-size: .875rem;
 }
 .lpx-where-label {
+  font-family: var(--lpx-mono);
   font-size: .6875rem; font-weight: 500; letter-spacing: .06em;
   text-transform: uppercase; color: var(--lpx-muted);
 }
