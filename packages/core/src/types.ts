@@ -96,6 +96,26 @@ export type ReportStatus =
   | "triage_failed"
   | "fix_failed";
 
+/**
+ * Where the HUMANS are, kept separate from `status` (where the machine is).
+ * Folding them into one field produces states like "fix_ready_awaiting_lead"
+ * and multiplies every time either side gains a step.
+ *   pending   — nobody has looked yet (a report is "created")
+ *   in_review — someone claimed it, so two people don't both work it
+ *   approved  — cleared to merge
+ *   declined  — we are not doing this
+ *   changes_requested — the fix is wrong; send it back, do not merge
+ */
+export type ReviewState = "pending" | "in_review" | "approved" | "declined" | "changes_requested";
+
+export type Review = {
+  state: ReviewState;
+  /** Who: a name or id from your own auth. loopix does not invent identity. */
+  by?: string;
+  at?: string;
+  note?: string;
+};
+
 export type Diagnosis = {
   summary?: string;
   category?: string; // bug | feature | confusion | noise
@@ -137,6 +157,8 @@ export type LoopReport = {
   context: ElementContext;
   page?: { url?: string; userAgent?: string; viewport?: string };
   clientTs?: string | null;
+  /** Human workflow, independent of `status`. Absent = never reviewed. */
+  review?: Review;
   /** Set when a merged fix was undone: the revert commit, and what it undid. */
   revert?: { at: string; commit: string; undid: string };
   diagnosis?: Diagnosis;

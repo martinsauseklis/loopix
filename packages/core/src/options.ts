@@ -6,6 +6,9 @@ export type LoopixFlags = {
   capture?: boolean; // the intake UI
   dashboard?: boolean; // the operator UI
   agent?: boolean; // autonomous triage/fix
+  /** When true, a merge is refused unless review.state === "approved".
+   *  The gate becomes a named person's decision, not "whoever clicked". */
+  requireReview?: boolean;
 };
 
 // A service/repo in the fleet. Phase 0 runs with a single implicit host repo;
@@ -40,6 +43,7 @@ export const DEFAULT_FLAGS: Required<LoopixFlags> = {
   capture: true,
   dashboard: true,
   agent: false, // OFF by default — autonomy is opt-in
+  requireReview: false, // opt-in: teams that need a lead's sign-off turn this on
 };
 
 export function resolveFlags(flags?: LoopixFlags): Required<LoopixFlags> {

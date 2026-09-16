@@ -1,4 +1,4 @@
-import type { LoopixServerConfig } from "@loopix/core";
+import { resolveFlags, type LoopixServerConfig } from "@loopix/core";
 import { git, FIX_BRANCH_RE } from "./git";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -23,6 +23,17 @@ export function createMergeRoute(config: LoopixServerConfig) {
     if (r.status !== "fix_ready") {
       return Response.json({ ok: false, error: `report is "${r.status}", not "fix_ready"` }, { status: 409 });
     }
+    // When a project requires sign-off, the merge is a named person's decision.
+    if (resolveFlags(config.flags).requireReview && r.review?.state !== "approved") {
+      return Response.json(
+        {
+          ok: false,
+          error: `review required — current state: ${r.review?.state ?? "pending"}`,
+        },
+        { status: 409 },
+      );
+    }
+
     const branch = r.fix?.branch;
     const base = r.fix?.base;
     if (!branch || !base || !FIX_BRANCH_RE.test(branch)) {
@@ -168,5 +179,45 @@ export function createRevertRoute(config: LoopixServerConfig) {
     } catch (err) {
       return Response.json({ ok: false, error: String(err).slice(0, 300) }, { status: 500 });
     }
+  };
+}
+
+const REVIEW_STATES = ["pending", "in_review", "approved", "declined", "changes_requested"] as const;
+
+/**
+ * Set the human review state: claim it, approve it, decline it, send it back.
+ * Separate from `status` on purpose — one says where the machine is, the other
+ * says where the people are, and neither should have to wait for the other.
+ */
+export function createReviewRoute(config: LoopixServerConfig) {
+  return async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
+    const { id } = await ctx.params;
+    const r = await config.store.get(id);
+    if (!r) return Response.json({ ok: false, error: "unknown report" }, { status: 404 });
+
+    let body: { state?: string; by?: string; note?: string };
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ ok: false, error: "invalid json" }, { status: 400 });
+    }
+
+    const state = String(body.state ?? "");
+    if (!REVIEW_STATES.includes(state as (typeof REVIEW_STATES)[number])) {
+      return Response.json(
+        { ok: false, error: `state must be one of: ${REVIEW_STATES.join(", ")}` },
+        { status: 400 },
+      );
+    }
+
+    const review = {
+      state: state as (typeof REVIEW_STATES)[number],
+      // Identity comes from the host's own auth; loopix never invents one.
+      by: typeof body.by === "string" ? body.by.slice(0, 80) : undefined,
+      at: new Date().toISOString(),
+      note: typeof body.note === "string" ? body.note.slice(0, 500) : undefined,
+    };
+    await config.store.patch(id, { review });
+    return Response.json({ ok: true, review });
   };
 }
